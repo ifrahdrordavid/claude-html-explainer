@@ -8,7 +8,7 @@
   "plugins": [
     {
       "name": "html-explainer",
-      "source": ".",
+      "source": "./",
       "description": "Generate polished single-page HTML explainers with a fixed design system, 18 section patterns, 6 SVG diagram recipes, and Playwright screenshot verification.",
       "version": "1.0.0",
       "category": "documentation",
