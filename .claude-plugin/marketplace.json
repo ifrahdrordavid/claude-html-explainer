@@ -1,0 +1,20 @@
+{
+  "name": "html-explainer",
+  "owner": {
+    "name": "Dror Ifrah",
+    "email": "dev1@con-techx.com",
+    "url": "https://github.com/ifrahdrordavid"
+  },
+  "plugins": [
+    {
+      "name": "html-explainer",
+      "source": ".",
+      "description": "Generate polished single-page HTML explainers with a fixed design system, 18 section patterns, 6 SVG diagram recipes, and Playwright screenshot verification.",
+      "version": "1.0.0",
+      "category": "documentation",
+      "keywords": ["html", "explainer", "documentation", "design-system"],
+      "homepage": "https://github.com/ifrahdrordavid/claude-html-explainer",
+      "license": "MIT"
+    }
+  ]
+}

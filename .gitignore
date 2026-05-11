@@ -1,0 +1,16 @@
+# Editor / OS junk
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# Local Python artifacts (the skill itself doesn't have any, but in case)
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Playwright outputs from local testing
+.screenshots/
+node_modules/
