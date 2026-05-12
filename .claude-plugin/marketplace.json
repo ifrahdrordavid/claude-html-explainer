@@ -5,6 +5,9 @@
     "email": "dev1@con-techx.com",
     "url": "https://github.com/ifrahdrordavid"
   },
+  "metadata": {
+    "description": "HTML Explainer — a Claude Code skill for generating polished, interactive single-page HTML explainers of technical systems, frameworks, plans, and designs: a fixed v4-quality design system, sticky scroll-spy TOC, 18 section patterns, 6 SVG diagram recipes, and a Playwright screenshot verification loop."
+  },
   "plugins": [
     {
       "name": "html-explainer",
