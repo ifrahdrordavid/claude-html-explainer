@@ -87,6 +87,7 @@ Create `<output_dir>/` and `<output_dir>/assets/`, then:
    - `~/.claude/skills/html-explainer/assets/styles.css` → `<output_dir>/assets/styles.css`
    - `~/.claude/skills/html-explainer/assets/app.js` → `<output_dir>/assets/app.js`
    - `~/.claude/skills/html-explainer/assets/screenshot.py` → `<output_dir>/screenshot.py`
+   - `~/.claude/skills/html-explainer/assets/screenshot-wide.py` → `<output_dir>/screenshot-wide.py` *(optional; only needed if you'll verify at >1440 px viewports — see Step 5b)*
 
 2. **Generate `<output_dir>/index.html`** using:
    - The frame: doctype, `<head>` with Google Fonts (Inter + JetBrains Mono),
@@ -143,6 +144,43 @@ If `screenshot.py` errors with `playwright` not installed:
 pip install playwright && python3 -m playwright install chromium
 ```
 
+## Step 5b — Wide-screen verification (when the target display is wide)
+
+`screenshot.py` shoots at one viewport (1440 px). That's the right default —
+it catches every defect that matters at the standard width — but it cannot
+tell you whether the page also looks good on a 27" / 4K / 50" monitor. The
+stock CSS hard-caps the page shell at 1440 px, so on an ultra-wide display
+the page sits as a small island with huge side whitespace (and the SVG
+labels render small because SVGs scale-to-container).
+
+Run `screenshot-wide.py` whenever:
+
+- the user is going to view the page on a wide / 4K / 5K display
+- the user asks the page to "spread", "fill the screen", "use the whole
+  width", or asks to bump the font size
+- you've added scoped wide-screen overrides (see
+  `reference/design-system.md` → *Wide-screen overrides*) and want to
+  confirm them across breakpoints
+
+```bash
+cd <output_dir> && python3 screenshot-wide.py
+# or with explicit widths:
+python3 screenshot-wide.py index.html 1440 2200 2880
+```
+
+Output: `.screenshots-wide/w<width>_<section_id>.png` per section per
+width, plus `w<width>_top.png` (hero+header crop). Read the wide-width
+PNGs and check: card grids add columns at wider widths, the SVG diagrams
+are bigger but capped (not ballooning), tables wrap cleanly, prose
+stays readable (≤ ~85ch), TOC text doesn't wrap into ribbons.
+
+**The Chrome-MCP `resize_window` is not a substitute.** It can't make a
+window wider than the host machine's physical display — if you're on a
+1440 px laptop, that's the real cap regardless of what `resize_window`
+reports. Playwright with an explicit `viewport={width: N}` renders at any
+virtual width regardless of host screen, which is exactly what
+`screenshot-wide.py` does.
+
 ## Step 6 — Ship (if user wants Mac delivery)
 
 ```bash
@@ -164,7 +202,11 @@ Open: <Mac path if shipped, else file:// URL>
 
 ## Defaults to keep (don't ask, don't change)
 
-- Body font: **18 px** floor. Refuse below; up to 20 px allowed.
+- Body font: **18 px** floor. Refuse below; up to 20 px allowed at the base
+  scale. If the user wants the *smallest* text ≥ N px, bump the whole scale
+  via `html { font-size: X% }` in the scoped `<style>` block — see
+  `reference/design-system.md` → *Type-scale enlargement* — never edit
+  `styles.css` directly.
 - Heading max: 60 px hero. Down to 48 px h1 if hero feels too loud — never
   larger.
 - Palette: slate-navy trust (indigo #4338CA primary, sky #0EA5E9 accent).
@@ -175,6 +217,11 @@ Open: <Mac path if shipped, else file:// URL>
 - Sendmac: auto if topic is shippable.
 - Frameworks: none. Pure HTML + CSS + vanilla JS. Google Fonts via `<link>`
   is fine. No Tailwind, no Bootstrap, no build step.
+- **Page-shell width: capped at 1440 px by default.** If the user explicitly
+  wants the page to spread on wide displays (or complains about whitespace),
+  apply the scoped wide-screen overrides — see `reference/design-system.md` →
+  *Wide-screen overrides*. Never delete the cap globally; the overrides keep
+  the 1440 px floor and only raise the ceiling.
 
 ## Critical defects encoded (don't reintroduce)
 
@@ -196,6 +243,35 @@ Open: <Mac path if shipped, else file:// URL>
 4. **No invented numbers.** Hero stat cards must reference real data. If no
    real number exists for the topic, drop the stat block.
 
+5. **`.src-table` last column is styled for short metrics, not prose.** The
+   stock CSS pins `white-space: nowrap` (and a muted color + smaller size) on
+   `.src-table td:last-child` — designed for the source-map pattern where
+   column 3 is "Lines" / "Size" / "Status". If your table uses the last
+   column for a real description, the whole row overflows and the right
+   column is clipped off-screen. Two fixes that work: keep the last column
+   short (move long content into column 2), or — when the long content
+   genuinely belongs in the last column — add a scoped override
+   `#<section-id> .src-table td:last-child { white-space: normal; color:
+   inherit; font-size: 1rem; }`. Same with `td:first-child`: paths in
+   column 1 must stay ≤ ~25 chars (move brace-glob bundles into the
+   description). Caught only by screenshot verification — the table renders
+   silently with the right column off-page.
+
+6. **SVG `<text>` does not wrap.** Any label longer than its containing
+   shape clips silently with no error. SVG text inside fixed-width pills /
+   boxes / circles must be character-counted against the shape width at the
+   target `font-size`. The cycle/loop `r ≥ 50` rule is one instance of this;
+   the same constraint applies to every box, pill, and Q-card in
+   `svg-recipes.md`. Always re-screenshot after editing SVG labels.
+
+7. **Page-shell hard-cap = small island on wide displays.** The stock CSS
+   pins `max-width: 1440 px` on `.layout`, `.site-header__inner`,
+   `.hero-inner`, and `.site-footer__inner`. On a 4K / 5K / 50" screen the
+   whole page sits as a 1440 px column with ~1200 px of side whitespace
+   each side, and the SVG labels render small because SVGs scale to their
+   container. Don't redesign — apply the scoped wide-screen overrides
+   from `reference/design-system.md` → *Wide-screen overrides*.
+
 ## Anti-patterns
 
 - Re-deriving the design system from scratch. Don't. Copy the assets.
@@ -209,6 +285,15 @@ Open: <Mac path if shipped, else file:// URL>
 - Adding a hero stat block with invented "10×" / "95%" / "$X saved" claims.
 - One-line follow-up screenshot iteration: when fixing a defect, actually
   re-run `screenshot.py` and re-Read the relevant PNG. Don't trust the fix.
+- Treating `mcp__claude-in-chrome__resize_window` as a wide-viewport test.
+  It can't grow the window past the host machine's physical display — a
+  1440 px laptop returns a 1440 px window even when you ask for 2560 px.
+  Use `screenshot-wide.py` (Playwright virtual viewport) instead.
+- Editing `assets/styles.css` to add wide-screen / type-scale overrides.
+  The base CSS is validated and shared. Put overrides in a scoped
+  `<style>` block in the page's `<head>` (after the `<link>` to
+  `styles.css`) so the cascade picks them up. See the recipes in
+  `reference/design-system.md`.
 
 ## Where things live
 
@@ -217,7 +302,8 @@ Open: <Mac path if shipped, else file:// URL>
 | `assets/styles.css` | v4 design system, ~893 lines, copied verbatim |
 | `assets/app.js` | Scroll-spy + smooth scroll + Escape, ~67 lines, copied verbatim |
 | `assets/screenshot.py` | Generic Playwright verifier, takes `[html-path]` arg |
-| `reference/design-system.md` | Token tables, breakpoints, light/dark guidance |
+| `assets/screenshot-wide.py` | Multi-viewport Playwright verifier for wide-screen layouts (1440 / 2000 / 2560 / 3840 by default) |
+| `reference/design-system.md` | Token tables, breakpoints, light/dark guidance, wide-screen + type-scale overrides |
 | `reference/section-patterns.md` | 18 HTML snippets with `{{PLACEHOLDERS}}` |
 | `reference/svg-recipes.md` | 6 SVG diagram templates with viewBoxes |
 | `reference/interaction.md` | Pointers to `app.js` behaviors |

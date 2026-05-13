@@ -471,6 +471,38 @@ See `section-patterns.md` §13 for the full HTML template.
 
 ---
 
+## Diagram label rendered size (it depends on the page, not the viewBox)
+
+SVG `<text>` is in **viewBox units**, not CSS pixels. When the SVG element
+is rendered on the page, its viewBox is scaled to fit the SVG's CSS width.
+A label's rendered px size is therefore:
+
+```
+rendered_text_px = font_size_in_viewBox × (svg_rendered_width_px / viewBox_width)
+```
+
+Two consequences worth knowing:
+
+- **A diagram's text shrinks on narrower screens.** A tree SVG with
+  `viewBox="0 0 1100 624"` and `font-size="13"` for pill sublabels
+  renders that text at ~12 px when the SVG is 990 px wide (a typical
+  content column), at ~16 px when the SVG is 1400 px wide, at ~20 px
+  when the SVG is 1700 px wide. The viewBox font number alone tells you
+  nothing about how it'll look — you have to know the rendered width.
+- **Bumping the page's root font-size (`html { font-size: % }`) does
+  not affect SVG internal text.** That bumps `rem`; SVG `font-size` is
+  in user units. To make diagram labels render bigger, either widen the
+  SVG container (the *Wide-screen overrides* recipe in
+  `design-system.md` does this as a side effect — capping figures at
+  1680 px) or bump the SVG `font-size` attributes themselves (which
+  often forces re-layout of the surrounding shapes, because SVG
+  `<text>` does not wrap).
+
+Pair this with the `r ≥ 50` rule in §4 (cycle/loop) and the implicit
+"label must fit inside its shape at the chosen `font-size`" check for
+every box / pill / circle in this recipe set. Always re-screenshot
+after changing either an SVG `font-size` or the page's layout cap.
+
 ## a11y checklist for every SVG
 
 Every informational SVG **must** include:

@@ -642,6 +642,41 @@ might dig into.
 </section>
 ```
 
+### Caveats — column-width rules in `.src-table`
+
+The stock CSS pins `white-space: nowrap` on **both** `td:first-child` and
+`td:last-child` (the last column also gets a muted color + `0.95rem`
+size). The pattern is shaped for the canonical `Path | What it does |
+Size` use — short symbol in col 1, prose in col 2 (which wraps), short
+metric in col 3.
+
+Two failure modes the screenshot loop catches:
+
+- **Column 1 path > ~25 characters** (e.g. a brace-glob bundle like
+  `src/cctl/{a,b,c,d,e,f,g}.py`) blows the column out, pushes the table
+  past the content width, and clips column 3 off-screen entirely.
+  *Fix:* pick one representative file per row and move the rest into
+  the column-2 description (`<code>foo.py</code> — with siblings
+  <code>bar.py</code>, <code>baz.py</code>: …`).
+- **Column 3 used for prose** (e.g. you wanted a long description
+  there) hits the `nowrap` and overflows. *Fix:* either restructure so
+  the prose is in column 2 (and column 3 stays a short metric), or add
+  a scoped per-section override:
+  ```html
+  <style>
+    #my-table-section .src-table td:last-child {
+      white-space: normal; color: inherit; font-size: 1rem;
+    }
+    #my-table-section .src-table td:nth-child(2) { white-space: normal; }
+  </style>
+  ```
+  Targeted scope (`#section-id`) — don't relax these rules globally;
+  other tables in the page may genuinely want the short-metric
+  styling.
+
+These rules look fine in source review and fail only at render. **Always
+screenshot-verify** any new `.src-table`.
+
 ---
 
 ## 16. Open problems
