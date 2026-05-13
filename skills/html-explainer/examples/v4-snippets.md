@@ -274,6 +274,77 @@ accessibility tree. Screen readers announce it normally.
 
 ---
 
+## Wide-screen + type-scale overrides (scoped `<style>`)
+
+Real working block, lifted from a session where the user said "my screen
+is 50″, you can take up at least half of it — and the smallest font
+should be at least 20 px." Goes in the page's `<head>` **after** the
+`<link>` to `assets/styles.css`, never as edits to `styles.css`. See
+`reference/design-system.md` → *Wide-screen overrides* and *Type-scale
+enlargement* for the full reasoning.
+
+```html
+<style>
+  /* ---- Type scale: smallest CSS font (0.8125rem cast-tag) lands ≥20px; rest scales in proportion. ---- */
+  html { font-size: 156%; }
+
+  /* ---- Spread on wide screens: widen the page shell well past the stock 1440px island,
+     but never narrower than the original 1440px. ---- */
+  .site-header__inner,
+  .hero-inner,
+  .layout,
+  .site-footer__inner { max-width: max(1440px, min(2880px, 94vw)); }
+
+  /* Wider, fluid TOC rail so the bumped TOC text doesn't wrap to ribbons. Guarded ≥1100px so the
+     stock mobile single-column rule (≤1024px) still wins (this <style> comes after styles.css). */
+  @media (min-width: 1100px) {
+    .layout { grid-template-columns: clamp(280px, 17vw, 360px) minmax(0, 1fr); }
+  }
+
+  /* Reading columns: let prose/callouts breathe wider, but not into eye-strain territory. */
+  .prose,
+  .callout,
+  .hero-lede { max-width: min(82ch, 100%); }
+  .figcaption { max-width: min(95ch, 100%); }
+
+  /* Card grids: cards must be wide enough for the bumped body text. min(100%, …) keeps the
+     "collapse to one column when narrow" behavior without any media query. */
+  .hero-stats { grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); }
+  .cast-grid  { grid-template-columns: repeat(auto-fit, minmax(min(100%, 600px), 1fr)); }
+  .appeals-grid,
+  .eng-grid,
+  .grid-2     { grid-template-columns: repeat(auto-fit, minmax(min(100%, 480px), 1fr)); }
+  .open-grid  { grid-template-columns: repeat(auto-fit, minmax(min(100%, 540px), 1fr)); }
+
+  /* Keep the big SVG diagrams from ballooning to full ultra-wide width — cap + center. */
+  .pipeline-figure svg, .tree-figure svg, .loop-figure svg,
+  .dag-figure svg, .cameras-figure svg, .bars-figure svg {
+    max-width: 1680px; display: block; margin: 0 auto;
+  }
+
+  /* ---- Scoped fix: the .src-table last column is styled for short metrics (nowrap/muted/small);
+     when a specific table puts real prose there, let it wrap and read as body text. ---- */
+  #hooks .src-table td:last-child { white-space: normal; color: inherit; font-size: 1rem; }
+  #hooks .src-table td:nth-child(2) { white-space: normal; }
+</style>
+```
+
+**Drop-in advice:**
+
+- Pick a `min(N, 94vw)` cap that matches the audience. `2880 px` is
+  good for 4K / 5K. Drop to `2400 px` if the page is prose-heavy
+  (long-line readability beats fill).
+- The `min(100%, N)` inside `minmax()` is what makes the grids
+  collapse cleanly to one column on narrow viewports — don't strip
+  it.
+- The `#hooks` scoped fix at the bottom is per-section. Repeat the
+  pattern for any other `.src-table` whose last column is prose, OR
+  restructure the table so the last column stays a short metric.
+
+Always re-verify with `screenshot-wide.py` (Step 5b in `SKILL.md`).
+
+---
+
 ## What to NOT copy from v4
 
 - Hero stat numbers (9, 8+, 6) — those are specific to the GantryForge

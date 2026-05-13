@@ -155,7 +155,11 @@ From `styles.css`:
 | < 640 px | Body drops to 17 px, hero further to 36 px, CTA padding tightens |
 
 The 240 px TOC width and 1440 px max content width are baked in. Don't
-override per-page.
+override them per-page **except** with the scoped recipes below
+(*Wide-screen overrides* and *Type-scale enlargement*) when the user
+explicitly asks for it — those go in a `<style>` block in the page's
+`<head>` (after the `<link>` to `styles.css`), never as edits to
+`styles.css` itself.
 
 ## Motion
 
@@ -170,3 +174,111 @@ override per-page.
 
 All hover transitions are 150–200 ms. Smooth scroll in `app.js` honors
 `prefers-reduced-motion` and falls back to `behavior: 'auto'`.
+
+## Wide-screen overrides (≥ ~1600 px viewports)
+
+The stock CSS pins the page shell at `max-width: 1440px` on `.layout`,
+`.site-header__inner`, `.hero-inner`, and `.site-footer__inner`. On a 4K /
+5K / 50" display that's a ~1440 px column with ~1200 px of side whitespace
+each side — the page looks like a small island. The fix is a scoped
+`<style>` block in the page's `<head>` **after** the `<link>` to
+`styles.css`, so the cascade picks it up. Never edit `styles.css`.
+
+Drop in this block when the user wants the page to spread on a wide
+display (typical trigger words: *"too narrow"*, *"too much white space"*,
+*"fill the screen"*, *"my screen is N inches"*):
+
+```html
+<style>
+  /* ---- Page shell: widen past the stock 1440 px island, but never narrower than 1440. ---- */
+  .site-header__inner,
+  .hero-inner,
+  .layout,
+  .site-footer__inner { max-width: max(1440px, min(2880px, 94vw)); }
+
+  /* Wider, fluid TOC rail so the bumped TOC text doesn't wrap to ribbons.
+     Guarded ≥ 1100 px so the stock mobile single-column collapse (≤ 1024 px)
+     still wins (the scoped <style> comes after styles.css). */
+  @media (min-width: 1100px) {
+    .layout { grid-template-columns: clamp(280px, 17vw, 360px) minmax(0, 1fr); }
+  }
+
+  /* Reading columns: let prose/callouts breathe wider, but not into eye-strain territory. */
+  .prose,
+  .callout,
+  .hero-lede { max-width: min(82ch, 100%); }
+  .figcaption { max-width: min(95ch, 100%); }
+
+  /* Card grids: cards must be wide enough for body text at the chosen size.
+     min(100%, …) keeps the "collapse to one column" behavior without media queries. */
+  .hero-stats { grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); }
+  .cast-grid  { grid-template-columns: repeat(auto-fit, minmax(min(100%, 600px), 1fr)); }
+  .appeals-grid,
+  .eng-grid,
+  .grid-2     { grid-template-columns: repeat(auto-fit, minmax(min(100%, 480px), 1fr)); }
+  .open-grid  { grid-template-columns: repeat(auto-fit, minmax(min(100%, 540px), 1fr)); }
+
+  /* SVG diagrams: grow with the page so labels render at a legible size,
+     but cap + center so they don't balloon to 2300 px on a 50" screen. */
+  .pipeline-figure svg, .tree-figure svg, .loop-figure svg,
+  .dag-figure svg, .cameras-figure svg, .bars-figure svg {
+    max-width: 1680px; display: block; margin: 0 auto;
+  }
+</style>
+```
+
+Why this is shaped the way it is:
+
+- **`max(1440px, min(2880px, 94vw))`** — never narrower than the stock
+  1440 px floor (so existing layouts don't regress), scales up with
+  viewport, caps at 2880 px (~75 % of a 4K screen, ~56 % of a 5K — wider
+  than that hurts prose readability).
+- **TOC `clamp(280px, 17vw, 360px)` inside `@media (min-width: 1100px)`** —
+  the bumped TOC text wraps to multiple lines in 240 px; widen it
+  fluidly. The media-query guard is load-bearing: the scoped `<style>`
+  block comes after `styles.css`, so an unguarded `.layout` grid rule
+  would clobber the stock mobile single-column collapse (`@media
+  (max-width: 1024px)`) inside `styles.css` and break narrow viewports.
+- **Card grids `minmax(min(100%, N), 1fr)`** — the `min(100%, N)` guard
+  lets cards collapse cleanly to one column when narrower than `N` (no
+  extra media query needed). The `N` floor must be wide enough for the
+  card's text at the chosen body size.
+- **SVG figure cap at 1680 px** — SVG `<text>` renders at
+  `font-size_in_viewBox × (svg_rendered_width / viewBox_width)`. A
+  1100-wide-viewBox tree SVG rendered at 1680 px makes a 13-unit label
+  render at ~20 px — the same target as the body floor. Going past 1680 px
+  makes the diagram visually dominate the page without adding readability.
+
+**Always re-verify with `screenshot-wide.py`** after applying — see
+`SKILL.md` → Step 5b.
+
+## Type-scale enlargement
+
+Stock is 18 px body floor. If the user asks for a larger smallest font
+(typical: *"smallest font at least 20 px"*, *"font is too small"*,
+*"accessibility"*), bump the whole scale by overriding the root font-size
+in the same scoped `<style>` block — never edit `styles.css`.
+
+```css
+/* Smallest CSS font in styles.css is `.cast-tag { font-size: 0.8125rem }`.
+   To make it ≥ 20 px and scale everything else proportionally, raise the
+   root font-size: 0.8125 × 24.96px ≈ 20.3 px. */
+html { font-size: 156%; }
+```
+
+Effect at 156 %: body 18 → 28 px, prose 19 → 30 px, captions / TOC / table
+cells 16 → 25 px, h2 36 → 56 px, hero 60 → 94 px. Re-verify with
+`screenshot.py` AND `screenshot-wide.py` — the bigger fonts often force:
+
+- card grids to need a wider `minmax(…)` floor (see *Wide-screen
+  overrides* above)
+- the TOC rail to widen (same)
+- table cells in `.src-table td:last-child` to wrap (see §15 caveats
+  in `section-patterns.md`)
+
+**Don't reach below the 18 px body floor**, and don't bump above ~175 %
+without re-checking every SVG diagram — the SVG `font-size` attributes
+are in viewBox units and don't scale with `rem`, so the diagrams stay
+their pre-bump size unless the SVG containers are widened (the
+*Wide-screen overrides* recipe widens the containers via the layout cap,
+which makes the SVG text render bigger as a side effect).

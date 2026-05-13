@@ -1,6 +1,6 @@
 {
   "name": "html-explainer",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "Generate a polished, interactive single-page HTML explainer for a technical system, framework, plan, or design. v4-quality design system, sticky scroll-spy TOC, 18 section patterns, 6 SVG diagram recipes, and a mandatory Playwright screenshot verification loop.",
   "author": {
     "name": "Dror Ifrah",

@@ -59,6 +59,10 @@ Google Fonts. Open `index.html` in any browser.
 - **`assets/screenshot.py`** — Headless Chromium via Playwright. Opens every
   `<details>`, screenshots each section by id, writes `.screenshots/*.png`
   for the skill to read back and visually verify.
+- **`assets/screenshot-wide.py`** — Same idea at multiple viewport widths
+  (1440 / 2000 / 2560 / 3840 by default). Used when verifying a wide /
+  ultra-wide layout — the Chrome window on a 1440 px laptop can't
+  actually be made wider, but Playwright renders at any virtual viewport.
 - **`reference/section-patterns.md`** — 18 copy-paste section snippets
   (hero, problem framing, concept cards, pipeline timeline, sample-data
   table, story walkthrough, decision tree, dependency DAG, multi-input
@@ -87,6 +91,35 @@ Google Fonts. Open `index.html` in any browser.
 | Collaborator tone by default | User explicitly course-corrected away from pitch tone |
 | No emojis | User preference (unless explicitly requested) |
 | No invented numbers | Hero stat blocks drop if no real metric exists |
+| 1440 px page-shell cap by default | Reference build was validated at 1440 px |
+| `.src-table` last col `nowrap` is for short metrics | If the column is prose, override per-section — never globally |
+
+## What's new in 1.1
+
+- **Wide-screen overrides recipe** — scoped `<style>` block that widens the
+  page shell to `max(1440px, min(2880px, 94vw))`, fluidly widens the TOC
+  rail, scales card-grid `minmax(…)` floors to match the body size, and
+  caps SVG figures so diagrams grow but don't balloon. Triggered when the
+  user wants the page to fill a wide / 4K / 50″ display. See
+  `reference/design-system.md` → *Wide-screen overrides*.
+- **Type-scale enlargement recipe** — `html { font-size: 156% }` to lift
+  the smallest CSS font (0.8125 rem cast-tag) to ≥ 20 px while scaling
+  everything else proportionally. See same file → *Type-scale
+  enlargement*.
+- **`screenshot-wide.py`** — multi-viewport verifier (1440 / 2000 / 2560
+  / 3840). The Chrome MCP `resize_window` can't grow a window past the
+  host display; Playwright with a virtual viewport can.
+- **`.src-table` caveats documented** — `td:first-child` and
+  `td:last-child` both pin `white-space: nowrap`. The pattern is built
+  for `Path | What it does | short-metric`. New caveat block in
+  `reference/section-patterns.md` §15 with the per-section override
+  recipe for prose-in-last-column cases.
+- **SVG diagram-label sizing math** — explicit formula in
+  `reference/svg-recipes.md` for `rendered_text_px = font_size_in_viewBox
+  × (svg_rendered_width / viewBox_width)` and the implication that
+  bumping `rem` does nothing for SVG text.
+- **Wide-screen scoped-style snippet in `examples/v4-snippets.md`** —
+  real working block to drop in.
 
 ## Requirements
 
